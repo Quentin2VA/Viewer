@@ -1,0 +1,35 @@
+library(ggplot2)
+library(plotly)
+Rda.ggplot<- function(X,Color=Null){
+attach(X)
+  smry <- summary(X)
+df1  <- data.frame(smry$sites[,1:2])       # PC1 and PC2
+df2  <- data.frame(smry$species[,1:2])     # loadings for PC1 and PC2
+df3  <- data.frame(X$CCA$biplot[,1:2])
+header <- colnames(df1)
+rda.plot <- ggplot(df1, aes(x=df1[,1], y=df1[,2],color=Color)) + 
+  theme_classic()+
+  geom_point(aes(label=rownames(df1)),size=0.7)+
+  #geom_text(aes(label=rownames(df1)),size=0.1) +
+  geom_hline(yintercept=0, linetype="dotted") +
+  geom_vline(xintercept=0, linetype="dotted") +
+  coord_fixed()+
+  ylab(label = header[2])+xlab(label = header[1])
+rda.biplot <- rda.plot +
+  geom_segment(data=df2, aes(x=0, xend=df2[,1], y=0, yend=df2[,2]), 
+               color="red", arrow=arrow(length=unit(0.01,"npc"))) +
+  geom_segment(data=df3, aes(x=0, xend=df3[,1], y=0, yend=df3[,2]), 
+               color="blue", arrow=arrow(length=unit(0.01,"npc"))) +
+  geom_text(data=df2, 
+            aes(x=df2[,1],y=df2[,2],label=rownames(df2),
+                hjust=0.5*(1-sign(df2[,1])),vjust=0.5*(1-sign(df2[,2]))), 
+            color="red", size=4)+
+    geom_text(data=df3, 
+            aes(x=df3[,1],y=df3[,2],label=rownames(df3),
+                hjust=0.5*(1-sign(df3[,1])),vjust=0.5*(1-sign(df3[,2]))), 
+            color="blue", size=4)
+
+A<-ggplotly(rda.biplot)
+print(A)
+detach(X)
+}
