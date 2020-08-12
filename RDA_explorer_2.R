@@ -65,9 +65,9 @@ Rda.ggplot<- function(X,PC1=1,PC2=2,site_lab=TRUE, point_shape=16, col="black"){
 
 #my.rda <- rda(sp~env)
 
-Rda.ggplot(my.rda,PC1 = 1,PC2 = 2,site_lab = FALSE,point_shape = 5, col="#C91ABA")
+#Rda.ggplot(my.rda,PC1 = 1,PC2 = 2,site_lab = FALSE,point_shape = 5, col="#C91ABA")
 
-Rda.ggplot(my.rda,PC1 = 1,PC2 = 2,site_lab = FALSE,point_shape = 3, col="#red")
+#Rda.ggplot(my.rda,PC1 = 1,PC2 = 2,site_lab = FALSE,point_shape = 3, col="#red")
 
 ### NOT RUN
 
