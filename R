@@ -1,0 +1,207 @@
+library(dplyr)
+library(devtools)
+library(ggplot2)
+library(remotes)
+library(vegan)
+install_github("jfq3/ggordiplots")
+
+#RDA function proto N2 - ENVISTRESS
+#QD20200812
+#------------------------------------------------------------------------------------------------------
+  ### Ellipse calculater from:
+  ### source:  J. Quensen package ggordiplots
+  ###   ( "https://rdrr.io/github/jfq3/ggordiplots/src/R/ord_labels.R")
+  ###   ( "https://rdrr.io/github/jfq3/ggordiplots/src/R/gg_ordiplot.R")
+  ### 
+  ### install.packages("remotes")
+  ### remotes::install_github("jfq3/ggordiplots")
+  
+  Rda.ggplot<- function(X,PC1=1,PC2=2,site_lab=TRUE, group_var=NULL, ellipse=FALSE, gg_scaling=2, color_pal= 1){
+    attach(X)
+    
+    smry<- plot(X, choices=c(PC1,PC2),scaling=gg_scaling)
+    df1  <- data.frame(smry$sites[,PC1:PC2])       # PC1 and PC2
+    df2  <- data.frame(smry$species[,PC1:PC2])     # loadings for PC1 and PC2
+    df3  <- data.frame(smry$biplot[,PC1:PC2])
+    header <- ord_labels(X)[PC1:PC2]
+    
+    if(is.null(group_var) == TRUE){
+      group_var <- as.factor(rep(1,nrow(df1)))
+      data.frame(group_var)
+    }
+    
+    if(is.null(smry$centroids) == FALSE){
+      df4  <- data.frame(smry$centroids[,PC1:PC2])
+      
+      if(site_lab==TRUE){
+        rda.plot <- ggplot(df1, aes(x=df1[,1], y=df1[,2],color=factor(group_var), fill=factor(group_var),shape=factor(group_var))) + 
+          theme_classic()+
+          geom_point(size=3,alpha=0.8, show.legend = FALSE)+
+          geom_point(data = df4, aes(label=row.names(df4),x=df4[,1], y=df4[,2],
+                                     color=factor(levels(group_var)), fill=factor(levels(group_var)),
+                                     shape=factor(levels(group_var)),
+                                     size=4,inherit.aes = FALSE),show.legend = FALSE) +
+          geom_text(aes(label=rownames(df1)),size=3) +
+          geom_hline(yintercept=0, linetype="dotted") +
+          geom_vline(xintercept=0, linetype="dotted") +
+          scale_color_brewer(type = "qual",palette = color_pal)+
+          coord_fixed()+
+          ylab(label = header[2])+xlab(label = header[1])+labs(color ="Species",fill="",shape="")
+      }else{
+        rda.plot <- ggplot(df1, aes(x=df1[,1], y=df1[,2],color=factor(group_var), fill=factor(group_var),shape=factor(group_var))) + 
+          theme_classic()+
+          geom_point(size=3,alpha=0.8, show.legend = FALSE)+
+          geom_point(data = df4, aes(label=row.names(df4),x=df4[,1], y=df4[,2],
+                                     color=factor(levels(group_var)), fill=factor(levels(group_var)),
+                                     shape=factor(levels(group_var)),
+                                     size=4,inherit.aes = FALSE),show.legend = FALSE)+
+          geom_hline(yintercept=0, linetype="dotted") +
+          geom_vline(xintercept=0, linetype="dotted") +
+          scale_color_brewer(type = "qual",palette = color_pal)+
+          coord_fixed()+
+          ylab(label = header[2])+xlab(label = header[1])+labs(color ="Species",fill="",shape="")
+      }
+      
+      if(ellipse==TRUE){
+        
+        Ellipsordi <- gg_ordiplot(X, choices= c(PC1,PC2), groups = group_var, scaling = gg_scaling,plot=FALSE)
+        
+        rda.biplot <-rda.plot+
+          geom_segment(data=df2, aes(x=0, xend=df2[,1], y=0, yend=df2[,2]), 
+                       color="red", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_segment(data=df3, aes(x=0, xend=df3[,1], y=0, yend=df3[,2]), 
+                       color="blue", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_text(data=df2, 
+                    aes(x=df2[,1],y=df2[,2],label=rownames(df2),
+                        hjust=0.5*(1-sign(df2[,1])),vjust=0.5*(1-sign(df2[,2]))), 
+                    color="red", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          geom_text(data=df3, 
+                    aes(x=df3[,1],y=df3[,2],label=rownames(df3),
+                        hjust=0.5*(1-sign(df3[,1])),vjust=0.5*(1-sign(df3[,2]))), 
+                    color="blue", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          geom_text(data=df4, 
+                    aes(x=df4[,1],y=df4[,2],label=rownames(df4),
+                        hjust=0.5*(1-sign(df4[,1])),vjust=0.5*(1-sign(df4[,2])), 
+                        color=factor(levels(group_var))), size=4,inherit.aes = FALSE) +
+          geom_path(data = Ellipsordi$df_ellipse, aes(x=x, y=y, color=Group),
+                    show.legend = FALSE,inherit.aes = FALSE)+
+          labs(color="Species")
+        
+      }else{
+        rda.biplot <-rda.plot+
+          geom_segment(data=df2, aes(x=0, xend=df2[,1], y=0, yend=df2[,2]), 
+                       color="red", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_segment(data=df3, aes(x=0, xend=df3[,1], y=0, yend=df3[,2]), 
+                       color="blue", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_text(data=df2, 
+                    aes(x=df2[,1],y=df2[,2],label=rownames(df2),
+                        hjust=0.5*(1-sign(df2[,1])),vjust=0.5*(1-sign(df2[,2]))), 
+                    color="red", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          geom_text(data=df3, 
+                    aes(x=df3[,1],y=df3[,2],label=rownames(df3),
+                        hjust=0.5*(1-sign(df3[,1])),vjust=0.5*(1-sign(df3[,2]))), 
+                    color="blue", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          geom_text(data=df4, 
+                    aes(x=df4[,1],y=df4[,2],label=rownames(df4),
+                        hjust=0.5*(1-sign(df4[,1])),vjust=0.5*(1-sign(df4[,2])), 
+                        color=factor(levels(group_var))), size=4,inherit.aes = FALSE) +
+          labs(color="Species")
+      }
+      
+    }else{
+      
+      if(site_lab==TRUE){
+        rda.plot <- ggplot(df1, aes(x=df1[,1], y=df1[,2],color=factor(group_var), fill=factor(group_var),shape=factor(group_var))) + 
+          theme_classic()+
+          geom_point(size=3,alpha=0.8, show.legend = FALSE)+
+          geom_text(aes(label=rownames(df1)),size=3) +
+          geom_hline(yintercept=0, linetype="dotted") +
+          geom_vline(xintercept=0, linetype="dotted") +
+          scale_color_brewer(type = "qual",palette = color_pal)+
+          coord_fixed()+
+          ylab(label = header[2])+xlab(label = header[1])+labs(color ="Species",fill="",shape="")
+      }else{
+        rda.plot <- ggplot(df1, aes(x=df1[,1], y=df1[,2],color=factor(group_var), fill=factor(group_var),shape=factor(group_var))) + 
+          theme_classic()+
+          geom_point(size=3,alpha=0.8, show.legend = FALSE)+
+          geom_hline(yintercept=0, linetype="dotted") +
+          geom_vline(xintercept=0, linetype="dotted") +
+          scale_color_brewer(type = "qual",palette = color_pal)+
+          coord_fixed()+
+          ylab(label = header[2])+xlab(label = header[1])+labs(color ="Species",fill="",shape="")
+      }
+      
+      if(ellipse==TRUE){
+        
+        Ellipsordi <- gg_ordiplot(X, choices= c(PC1,PC2), groups = group_var, scaling = gg_scaling,plot=FALSE)
+        
+        rda.biplot <-rda.plot+
+          geom_segment(data=df2, aes(x=0, xend=df2[,1], y=0, yend=df2[,2]), 
+                       color="red", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_segment(data=df3, aes(x=0, xend=df3[,1], y=0, yend=df3[,2]), 
+                       color="blue", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_text(data=df2, 
+                    aes(x=df2[,1],y=df2[,2],label=rownames(df2),
+                        hjust=0.5*(1-sign(df2[,1])),vjust=0.5*(1-sign(df2[,2]))), 
+                    color="red", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          geom_text(data=df3, 
+                    aes(x=df3[,1],y=df3[,2],label=rownames(df3),
+                        hjust=0.5*(1-sign(df3[,1])),vjust=0.5*(1-sign(df3[,2]))), 
+                    color="blue", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          labs(color="Species")
+        
+      }else{
+        
+        rda.biplot <-rda.plot+
+          geom_segment(data=df2, aes(x=0, xend=df2[,1], y=0, yend=df2[,2]), 
+                       color="red", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_segment(data=df3, aes(x=0, xend=df3[,1], y=0, yend=df3[,2]), 
+                       color="blue", arrow=arrow(length=unit(0.01,"npc")),
+                       inherit.aes = FALSE,show.legend = FALSE) +
+          geom_text(data=df2, 
+                    aes(x=df2[,1],y=df2[,2],label=rownames(df2),
+                        hjust=0.5*(1-sign(df2[,1])),vjust=0.5*(1-sign(df2[,2]))), 
+                    color="red", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          geom_text(data=df3, 
+                    aes(x=df3[,1],y=df3[,2],label=rownames(df3),
+                        hjust=0.5*(1-sign(df3[,1])),vjust=0.5*(1-sign(df3[,2]))), 
+                    color="blue", size=4,inherit.aes = FALSE,show.legend = FALSE)+
+          labs(color="Species")
+      }
+      
+    }
+    
+    print(rda.biplot)
+    detach(X)
+  }
+
+# # # Summary # #----
+
+#X = YOur RDA object
+# PC 1 and 2 : Pincip Component selection 
+# group_var: select a group of variables
+# site_lab: Display site names 
+# scaling: Select scaling 
+# ellipse : when TRUE add ordiellipse 
+# color_pal: choose color palette to change color 
+# Example of uses :
+
+#library(vegan)
+
+#my.rda <- rda(sp~env)
+
+# Rda.ggplot(my.rda, PC1 = 1,PC2 = 2,site_lab = TRUE, gg_scaling = 2,ellipse = TRUE)
+
+# Rda.ggplot(my.rda)
+
+### NOT RUN
+
+# ENJOY ;-)
+#Q2VA.git.hub
